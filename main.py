@@ -5,10 +5,10 @@ import logging
 import os
 from dotenv import dotenv_values
 
+os.system(f'spotdl --download-ffmpeg')
+
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                      level=logging.INFO)
-
-os.system(f'spotdl --download-ffmpeg')
 
 with open("config.json", "r") as read_file:
     config = json.load(read_file)
