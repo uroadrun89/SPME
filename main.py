@@ -3,9 +3,8 @@ from telegram import Bot
 import json
 import logging
 import os
-from dotenv import dotenv_values
-
 os.system(f'spotdl --download-ffmpeg')
+from dotenv import dotenv_values
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                      level=logging.INFO)
