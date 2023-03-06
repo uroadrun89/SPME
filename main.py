@@ -90,6 +90,6 @@ def authenticate(update, context):
 handler = MessageHandler(Filters.text, get_single_song_handler)
 dispatcher.add_handler(handler=handler)
 
-POLLING_INTERVAL = 2.8
+POLLING_INTERVAL = 11.11
 updater.start_polling(poll_interval=POLLING_INTERVAL)
 updater.idle()
