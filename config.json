@@ -1,7 +1,7 @@
 {
   "AUTH": {
-    "ENABLE": false,
-    "PASSWORD": "768x",
+    "ENABLE": true,
+    "PASSWORD": "68i",
     "USERS": []
   },
   "SPOTDL_DOWNLOADER": true,
