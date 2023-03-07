@@ -1,43 +1,24 @@
 #Use an Ubuntu 18.04 base for our staging server
 FROM vm/ubuntu:18.04
 
+# To note: Layerfiles create entire VMs, *not* containers!
+
+# Install python
+RUN apt-get update && apt-get install python3
+
+# Create some files
+RUN echo '<b>some html</b>' > hello.html
+RUN echo '<b>another file</b>' > another.html
+
 # You could also install & start a database:
-RUN apt-get update && apt-get install postgresql
+# RUN apt-get update && apt-get install postgresql
 
-RUN wget https://www.python.org/ftp/python/3.11.2/Python-3.11.2.tgz
-RUN tar -xf Python-3.11.2.tgz
-RUN cd Python-3.11.2
-RUN apt-get install -y pkg-config
-RUN ./configure --enable-optimizations
-RUN make -j 6
-RUN sudo make altinstall
-RUN python3.11 -m pip install --upgrade pip
-
-RUN cd
-RUN mkdir SP
-RUN cd SP
-RUN wget https://github.com/freshremix/SPDBT/archive/refs/heads/heroku.zip
-RUN apt install unzip
-RUN unzip heroku.zip
-RUN cd SPDBT-heroku
-
-RUN sudo apt-get install -y libsqlite3-dev
-RUN sudo apt-get install git
-RUN sudo apt install curl
-RUN curl -fsSL https://deb.nodesource.com/setup_16.x | sudo bash -
-RUN curl -fsSL https://deb.nodesource.com/setup_14.x | sudo bash -
-RUN sudo apt install -y nodejs vim
-RUN sudo apt install gcc g++ make
-RUN curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/yarnkey.gpg >/dev/null
-RUN echo "deb [signed-by=/usr/share/keyrings/yarnkey.gpg] https://dl.yarnpkg.com/debian stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-RUN sudo apt update && sudo apt install yarn
-RUN sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev
-
-RUN pip3.11 install -r requirements.txt
-RUN BACKGROUND python3.11 main.py
+# This line copies the repository to /root in the runner
+COPY . .
+RUN ls
 
 # Expose the webserver in the staging server as a secure link.
 # Whenever someone clicks the link, we'll load this staging server and forward
 # their requests to it.
-RUN BACKGROUND python3.11 -m http.server 80
+RUN BACKGROUND python3 -m http.server 80
 EXPOSE WEBSITE http://localhost:80
