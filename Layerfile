@@ -14,7 +14,6 @@ RUN echo '<b>another file</b>' > another.html
 # RUN apt-get update && apt-get install postgresql
 
 # This line copies the repository to /root in the runner
-RUN cd /root/SP
 COPY . .
 RUN ls
 
