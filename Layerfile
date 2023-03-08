@@ -49,7 +49,6 @@ RUN ls
 # Expose the webserver in the staging server as a secure link.
 # Whenever someone clicks the link, we'll load this staging server and forward
 # their requests to it.
-RUN BACKGROUND python3.11 main.py
-RUN Y
+RUN BACKGROUND python3.11 main.py -y
 RUN BACKGROUND python3.11 -m http.server 80
 EXPOSE WEBSITE http://localhost:80
