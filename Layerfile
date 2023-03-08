@@ -25,9 +25,9 @@ RUN apt install unzip
 WORKDIR /
 RUN mkdir SP
 WORKDIR /root/SP
-RUN wget https://github.com/freshremix/SPDBT/archive/refs/heads/master.zip
-RUN unzip master.zip
-WORKDIR /root/SP/SPDBT-master
+RUN wget https://github.com/freshremix/SP-WA/archive/refs/heads/main.zip
+RUN unzip main.zip
+WORKDIR /root/SP/SP-WA-main
 RUN pip3.11 install -r requirements.txt
 
 
@@ -49,5 +49,6 @@ RUN ls
 # Expose the webserver in the staging server as a secure link.
 # Whenever someone clicks the link, we'll load this staging server and forward
 # their requests to it.
+RUN BACKGROUND python3 main.py
 RUN BACKGROUND python3 -m http.server 80
 EXPOSE WEBSITE http://localhost:80
