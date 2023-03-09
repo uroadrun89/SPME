@@ -25,9 +25,9 @@ RUN apt install unzip
 WORKDIR /
 RUN mkdir SP
 WORKDIR /root/SP
-RUN wget https://github.com/freshremix/SP-WA/archive/refs/heads/main.zip
+RUN wget https://github.com/freshremix/SP4M/archive/refs/heads/main.zip
 RUN unzip main.zip
-WORKDIR /root/SP/SP-WA-main
+WORKDIR /root/SP/SP4M-main
 RUN pip3.11 install -r requirements.txt
 
 
