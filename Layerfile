@@ -25,9 +25,9 @@ RUN apt install unzip
 WORKDIR /
 RUN mkdir SP
 WORKDIR /root/SP
-RUN wget https://github.com/freshremix/SPD4M/archive/refs/heads/main.zip
+RUN wget https://github.com/freshremix/ISPD4M/archive/refs/heads/main.zip
 RUN unzip main.zip
-WORKDIR /root/SP/SPD4M-main
+WORKDIR /root/SP/ISPD4M-main
 RUN pip3.11 install -r requirements.txt
 RUN ls
 RUN BACKGROUND python3.11 main.py && \
