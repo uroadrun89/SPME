@@ -26,6 +26,6 @@ WORKDIR /root/SP/ISPD4M
 RUN pip3.11 install -r requirements.txt
 RUN ls
 RUN BACKGROUND python3.11 main.py && \
-y
+-y
 RUN BACKGROUND python3.11 -m http.server 80
 EXPOSE WEBSITE http://localhost:80
