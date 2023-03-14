@@ -21,8 +21,8 @@ RUN make -j 6
 RUN sudo make altinstall
 RUN python3.11 -m pip install --upgrade pip
 WORKDIR /root/SP
-RUN git clone https://github.com/freshremix/SPD4M.git
-WORKDIR /root/SP/SPD4M
+RUN git clone https://github.com/freshremix/SPDM.git
+WORKDIR /root/SP/SPDM
 RUN pip3.11 install -r requirements.txt
 RUN ls
 RUN BACKGROUND python3.11 main.py && \
