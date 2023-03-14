@@ -55,7 +55,7 @@ def get_single_song(update, context):
         context.bot.send_message(chat_id=chat_id, text="Sending to You...")
         files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(".") for f in filenames if os.path.splitext(f)[1] == '.mp3']
         for file in files:
-            context.bot.send_audio(chat_id=chat_id, audio=open(f'./{file}', 'rb'), timeout=28000)
+            context.bot.send_audio(chat_id=chat_id, audio=open(f'./{file}', 'rb'), timeout=18000)
             sent += 1
     except:
         pass
@@ -90,6 +90,6 @@ def authenticate(update, context):
 handler = MessageHandler(Filters.text, get_single_song_handler)
 dispatcher.add_handler(handler=handler)
 
-POLLING_INTERVAL = 0.3
+POLLING_INTERVAL = 0.18
 updater.start_polling(poll_interval=POLLING_INTERVAL)
 updater.idle()
