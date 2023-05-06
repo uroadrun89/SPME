@@ -1,7 +1,7 @@
 ffmpegio==0.7.0
 python-telegram-bot==13.14
 python-dotenv
-https://github.com/freshremix/SPD-4.1.2/archive/refs/heads/master.zip
+spotdl
 pytube
 ytmusicapi
 spotipy
