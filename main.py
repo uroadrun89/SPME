@@ -1,67 +1,95 @@
-from telegram.ext import Updater, MessageHandler, Filters, CommandHandler
+from telegram.ext import Updater, MessageHandler, Filters, Handler
 from telegram import Bot
 import json
 import logging
 import os
+os.system(f'spotdl --download-ffmpeg')
 from dotenv import dotenv_values
-import subprocess
 
-# Load environment variables from .env file
-config = dotenv_values(".env")
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                     level=logging.INFO)
 
-# Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+with open("config.json", "r") as read_file:
+    config = json.load(read_file)
 
-# Create an instance of the Updater and pass your bot token
-updater = Updater(token=config['BOT_TOKEN'], use_context=True)
+def update_config():
+    with open("config.json", "w") as write_file:
+        json.dump(config, write_file)
+try:
+    token = dotenv_values(".env")["TELEGRAM_TOKEN"]
+except:
+    token = os.environ['TELEGRAM_TOKEN']
+updater = Updater(token, use_context=True)
 dispatcher = updater.dispatcher
 
-# Command handler for the /start command
-def start(update, context):
-    if 'password' not in context.chat_data or not context.args:
-        context.bot.send_message(chat_id=update.effective_chat.id, text='Please provide the password to start using the bot.')
-        return
+def get_single_song_handler(update, context):
+    if config["AUTH"]["ENABLE"]:
+        authenticate(update, context)
+    get_single_song(update, context)
 
-    password = context.args[0]
-    if password == config['BOT_PASSWORD']:
-        context.chat_data['password'] = password
-        context.bot.send_message(chat_id=update.effective_chat.id, text='Authentication successful! You can now use the bot.')
+
+def get_single_song(update, context):
+    chat_id = update.effective_message.chat_id
+    message_id = update.effective_message.message_id
+    username = update.message.chat.username
+    logging.log(logging.INFO, f'start to query message {message_id} in chat:{chat_id} from {username}')
+
+    url = "'" + update.effective_message.text + "'"
+
+    os.system(f'mkdir -p .temp{message_id}{chat_id}')
+    os.chdir(f'./.temp{message_id}{chat_id}')
+
+    logging.log(logging.INFO, f'start downloading')
+    context.bot.send_message(chat_id=chat_id, text="Fetching...")
+
+    if config["SPOTDL_DOWNLOADER"]:
+        os.system(f'spotdl download {url} --threads 12 --format mp3 --bitrate 320k --lyrics genius')
+    elif config["SPOTIFYDL_DOWNLOADER"]:
+        os.system(f'spotifydl {url}')
     else:
-        context.bot.send_message(chat_id=update.effective_chat.id, text='Authentication failed! Incorrect password.')
+        logging.log(logging.ERROR, 'you should select one of downloaders')
 
-# Command handler for the /download command
-def download(update, context):
-    if 'password' not in context.chat_data:
-        context.bot.send_message(chat_id=update.effective_chat.id, text='Please authenticate using the /start command.')
-        return
+    logging.log(logging.INFO, 'sending to client')
+    try:
+        sent = 0 
+        context.bot.send_message(chat_id=chat_id, text="Sending to You...")
+        files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(".") for f in filenames if os.path.splitext(f)[1] == '.mp3']
+        for file in files:
+            context.bot.send_audio(chat_id=chat_id, audio=open(f'./{file}', 'rb'), timeout=18000)
+            sent += 1
+    except:
+        pass
 
-    # Get the Spotify link from the message
-    spotify_link = context.args[0]
-    
-    # Create a temporary folder to store the downloaded music files
-    temp_folder = 'temp_folder'
-    os.makedirs(temp_folder, exist_ok=True)
+    os.chdir('./..')
+    os.system(f'rm -rf .temp{message_id}{chat_id}')
 
-    # Download the music using spotdl
-    os.system(f'spotdl --output {temp_folder} --output-format mp3 --song {spotify_link}')
-    
-    # Convert the downloaded music files to 320kbps using ffmpeg
-    for file_name in os.listdir(temp_folder):
-        if file_name.endswith('.mp3'):
-            input_path = os.path.join(temp_folder, file_name)
-            output_path = os.path.join(temp_folder, f'{file_name[:-4]}_320kbps.mp3')
-            subprocess.run(['ffmpeg', '-i', input_path, '-b:a', '320k', output_path])
+    if sent == 0:
+       context.bot.send_message(chat_id=chat_id, text="It seems there was a problem in finding/sending the song.")
+       raise Exception("dl Failed")
+    else:
+        logging.log(logging.INFO, 'sent')
 
-            # Send the music file to Telegram
-            with open(output_path, 'rb') as audio_file:
-                context.bot.send_audio(chat_id=update.effective_chat.id, audio=audio_file)
 
-    # Remove the temporary folder
-    os.system(f'rm -rf {temp_folder}')
 
-# Register the handlers
-dispatcher.add_handler(CommandHandler('start', start))
-dispatcher.add_handler(CommandHandler('download', download))
+def authenticate(update, context):
+    username = update.message.chat.username
+    chat_id = update.effective_message.chat_id
+    if update.effective_message.text == config["AUTH"]["PASSWORD"]:
+        logging.log(logging.INFO, f'new sign in for user {username}, {chat_id}')
+        config["AUTH"]["USERS"].append(chat_id)
+        update_config()
+        context.bot.send_message(chat_id=chat_id, text="You signed in successfully. Enjoy🍻")
+        raise Exception("Signed In")
+    elif chat_id not in config["AUTH"]["USERS"]:
+        logging.log(logging.INFO, f'not authenticated try')
+        context.bot.send_message(chat_id=chat_id, text="⚠️This bot is personal and you are not signed in. Please enter the "
+                                               "password to sign in. If you don't know it contact the bot owner. ")
+        raise Exception("Not Signed In")
 
-# Start the bot
-updater.start_polling()
+
+handler = MessageHandler(Filters.text, get_single_song_handler)
+dispatcher.add_handler(handler=handler)
+
+POLLING_INTERVAL = 0.5
+updater.start_polling(poll_interval=POLLING_INTERVAL)
+updater.idle()
