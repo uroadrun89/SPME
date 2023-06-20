@@ -3,6 +3,7 @@ import os
 import json
 from dotenv import dotenv_values
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import requests
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -64,7 +65,9 @@ def get_single_song(update, context):
         files = [file for file in os.listdir(".") if file.endswith(".mp3")]
         if files:
             for file in files:
-                context.bot.send_audio(chat_id=chat_id, audio=open(file, 'rb'), timeout=18000)
+                track_details = get_track_details(url)
+                caption = generate_caption(track_details)
+                context.bot.send_audio(chat_id=chat_id, audio=open(file, 'rb'), caption=caption, timeout=18000)
                 sent += 1
             logger.info(f'Sent {sent} audio file(s) to user.')
         else:
@@ -76,6 +79,37 @@ def get_single_song(update, context):
 
     os.chdir('..')
     os.system(f'rm -rf {download_dir}')
+
+def get_track_details(url):
+    api_url = f"https://api.spotify.com/v1/tracks/{get_track_id(url)}"
+    headers = {
+        "Authorization": "Bearer YOUR_SPOTIFY_API_TOKEN"
+        # Replace YOUR_SPOTIFY_API_TOKEN with your actual Spotify API token
+    }
+    response = requests.get(api_url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        logger.warning('Failed to fetch track details from Spotify API.')
+        return None
+
+def get_track_id(url):
+    track_id = url.split('/')[-1]
+    return track_id
+
+def generate_caption(track_details):
+    if track_details is not None:
+        track_name = track_details['name']
+        artist = track_details['artists'][0]['name']
+        album = track_details['album']['name']
+        release_date = track_details['album']['release_date']
+        genre = track_details['album']['genres'][0]
+        track_url = track_details['external_urls']['spotify']
+
+        caption = f"🎵 Track: {track_name}\n👤 Artist: {artist}\n🎧 Album: {album}\n📅 Release Date: {release_date}\n🎶 Genre: {genre}\n🔗 Track Link: {track_url}"
+        return caption
+    else:
+        return ""
 
 def main():
     updater = Updater(token=config.token, use_context=True)
