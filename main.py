@@ -46,6 +46,7 @@ def get_single_song(update, context, url):
     logging.log(logging.INFO, f'start downloading')
     context.bot.send_message(chat_id=chat_id, text="Fetching...")
 
+    config = load_config()
     downloader = config.get("DOWNLOADER")
     if downloader == "spotdl":
         subprocess.run(["spotdl", "download", url, "--threads", "12", "--format", "mp3", "--bitrate", "320k", "--lyrics", "genius"])
@@ -76,7 +77,7 @@ def get_single_song_handler(update, context):
     if config["AUTH"]["ENABLE"]:
         authenticate(update, context)
     
-    urls = update.effective_message.text.split("\n")
+    urls = update.effective_message.text.split('\n')
     for url in urls:
         get_single_song(update, context, url)
 
