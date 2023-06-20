@@ -1,105 +1,96 @@
-import json
 import logging
 import os
-import subprocess
-
+import json
 from dotenv import dotenv_values
-from telegram import Bot
-from telegram.ext import Updater, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-CONFIG_FILE = "config.json"
+class Config:
+    def __init__(self):
+        self.load_config()
 
-def load_config():
-    with open(CONFIG_FILE, "r") as file:
-        return json.load(file)
+    def load_config(self):
+        try:
+            token = dotenv_values(".env")["TELEGRAM_TOKEN"]
+        except Exception as e:
+            logger.error(f"Failed to load token from .env file: {e}")
+            token = os.environ.get('TELEGRAM_TOKEN')
+            if token is None:
+                logger.error("Telegram token not found. Make sure to set TELEGRAM_TOKEN environment variable.")
+                raise ValueError("Telegram token not found.")
+        self.token = token
+        self.auth_enabled = False  # Change to True if authentication is required
+        self.auth_password = "your_password"  # Set the desired authentication password
+        self.auth_users = []  # List of authorized user chat IDs
 
-def save_config(config):
-    with open(CONFIG_FILE, "w") as file:
-        json.dump(config, file)
+config = Config()
 
-def authenticate(update, context):
-    chat_id = update.effective_message.chat_id
-    config = load_config()
-    if update.effective_message.text == config["AUTH"]["PASSWORD"]:
-        logging.log(logging.INFO, f'new sign in for user {update.message.chat.username}, {chat_id}')
-        config["AUTH"]["USERS"].append(chat_id)
-        save_config(config)
-        context.bot.send_message(chat_id=chat_id, text="You signed in successfully. Enjoy🍻")
-        raise Exception("Signed In")
-    elif chat_id not in config["AUTH"]["USERS"]:
-        logging.log(logging.INFO, f'not authenticated try')
-        context.bot.send_message(chat_id=chat_id, text="⚠️ This bot is personal and you are not signed in. Please enter the "
-                                                       "password to sign in. If you don't know it, contact the bot owner.")
-        raise Exception("Not Signed In")
+def authenticate(func):
+    def wrapper(update, context):
+        chat_id = update.effective_chat.id
+        if config.auth_enabled:
+            if chat_id not in config.auth_users:
+                context.bot.send_message(chat_id=chat_id, text="⚠️ This bot is personal and you are not signed in. Please enter the password to sign in. If you don't know it, contact the bot owner.")
+                return
+        return func(update, context)
+    return wrapper
 
-def get_single_song(update, context, url):
-    chat_id = update.effective_message.chat_id
+def start(update, context):
+    chat_id = update.effective_chat.id
+    context.bot.send_message(chat_id=chat_id, text="Welcome to the Song Downloader Bot!")
+
+def get_single_song(update, context):
+    chat_id = update.effective_chat.id
     message_id = update.effective_message.message_id
-    username = update.message.chat.username
-    logging.log(logging.INFO, f'start to query message {message_id} in chat:{chat_id} from {username}')
+    username = update.effective_chat.username
+    logger.info(f'Starting song download. Chat ID: {chat_id}, Message ID: {message_id}, Username: {username}')
 
-    url = "'" + url + "'"
+    url = update.effective_message.text.strip()
 
-    logging.log(logging.INFO, f'start downloading')
+    download_dir = f".temp{message_id}{chat_id}"
+    os.makedirs(download_dir, exist_ok=True)
+    os.chdir(download_dir)
+
+    logger.info('Downloading song...')
     context.bot.send_message(chat_id=chat_id, text="Fetching...")
 
-    config = load_config()
-    downloader = config.get("DOWNLOADER")
-    if downloader == "spotdl":
-        subprocess.run(["spotdl", "download", url, "--threads", "12", "--format", "mp3", "--bitrate", "320k", "--lyrics", "genius"])
-    elif downloader == "spotifydl":
-        subprocess.run(["spotifydl", url])
-    else:
-        logging.log(logging.ERROR, 'you should select one of the downloaders')
+    if url.startswith(("http://", "https://")):
+        os.system(f'spotdl download "{url}" --threads 12 --format mp3 --bitrate 320k --lyrics genius')
 
-    logging.log(logging.INFO, 'sending to client')
-    try:
+        logger.info('Sending song to user...')
         sent = 0
-        context.bot.send_message(chat_id=chat_id, text="Sending to you...")
-        files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(".") for f in filenames if os.path.splitext(f)[1] == '.mp3']
-        for file in files:
-            with open(file, "rb") as audio_file:
-                context.bot.send_audio(chat_id=chat_id, audio=audio_file, timeout=18000)
-            sent += 1
-    except:
-        pass
-
-    if sent == 0:
-        context.bot.send_message(chat_id=chat_id, text="It seems there was a problem in finding/sending the song.")
-        raise Exception("dl Failed")
+        files = [file for file in os.listdir(".") if file.endswith(".mp3")]
+        if files:
+            for file in files:
+                context.bot.send_audio(chat_id=chat_id, audio=open(file, 'rb'), timeout=18000)
+                sent += 1
+            logger.info(f'Sent {sent} audio file(s) to user.')
+        else:
+            context.bot.send_message(chat_id=chat_id, text="Unable to find the requested song.")
+            logger.warning('No audio file found after download.')
     else:
-        logging.log(logging.INFO, 'sent')
+        context.bot.send_message(chat_id=chat_id, text="Invalid URL. Please provide a valid song URL.")
+        logger.warning('Invalid URL provided.')
 
-def get_single_song_handler(update, context):
-    if config["AUTH"]["ENABLE"]:
-        authenticate(update, context)
-    
-    urls = update.effective_message.text.split('\n')
-    for url in urls:
-        get_single_song(update, context, url)
+    os.chdir('..')
+    os.system(f'rm -rf {download_dir}')
 
 def main():
-    try:
-        token = dotenv_values(".env")["TELEGRAM_TOKEN"]
-    except:
-        token = os.environ.get('TELEGRAM_TOKEN')
-    if not token:
-        raise ValueError("Telegram token not provided.")
-
-    updater = Updater(token, use_context=True)
+    updater = Updater(token=config.token, use_context=True)
     dispatcher = updater.dispatcher
 
-    global config
-    config = load_config()
+    # Handlers
+    start_handler = CommandHandler('start', start)
+    dispatcher.add_handler(start_handler)
 
-    handler = MessageHandler(Filters.text, get_single_song_handler)
-    dispatcher.add_handler(handler=handler)
+    song_handler = MessageHandler(Filters.text & (~Filters.command), get_single_song)
+    dispatcher.add_handler(song_handler)
 
-    POLLING_INTERVAL = 0.5
-    updater.start_polling(poll_interval=POLLING_INTERVAL)
+    # Start the bot
+    updater.start_polling()
+    logger.info('Bot started.')
     updater.idle()
 
 if __name__ == "__main__":
