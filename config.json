@@ -1,9 +1,10 @@
 {
-  "AUTH": {
-    "ENABLE": true,
-    "PASSWORD": "68i",
-    "USERS": []
-  },
-  "SPOTDL_DOWNLOADER": true,
-  "SPOTIFYDL_DOWNLOADER": false
+  "spotify_client_id": "5844159a9506462fa5fd2d190238c37e",
+  "spotify_client_secret": "c0e1785900eb4c0582b1f76b0398d9cf",
+  "telegram_bot_token": "6174716199:AAHUkPgOa04aew5-XFTZ9uqK4bfkZ8vC_tg",
+  "authentication": {
+    "method": "password",
+    "username": "mrkk68",
+    "password": "c51A"
+  }
 }
