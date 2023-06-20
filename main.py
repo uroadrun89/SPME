@@ -40,7 +40,7 @@ def authenticate(func):
 
 def start(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
-    context.bot.send_message(chat_id=chat_id, text="🎵 Welcome to the Song Downloader Bot! Amazing! 🎵")
+    context.bot.send_message(chat_id=chat_id, text="🎵 Welcome to the Song Downloader Bot! 🎵")
 
 def get_single_song(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
@@ -60,7 +60,7 @@ def get_single_song(update: Update, context: CallbackContext):
     if url.startswith(("http://", "https://")):
         os.system(f'spotdl download "{url}" --threads 12 --format mp3 --bitrate 320k --lyrics genius')
 
-        logger.info('Sending song to user... Amazing!')
+        logger.info('Sending song to user...')
         sent = 0
         files = [file for file in os.listdir(".") if file.endswith(".mp3")]
         if files:
@@ -96,7 +96,7 @@ def main():
 
     # Start the bot
     updater.start_polling(poll_interval=0.3)
-    logger.info('Bot started. Amazing!')
+    logger.info('Bot started')
     updater.idle()
 
 if __name__ == "__main__":
