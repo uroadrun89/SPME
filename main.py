@@ -35,17 +35,13 @@ def authenticate(update, context):
                                                        "password to sign in. If you don't know it, contact the bot owner.")
         raise Exception("Not Signed In")
 
-def get_single_song(update, context):
+def get_single_song(update, context, url):
     chat_id = update.effective_message.chat_id
     message_id = update.effective_message.message_id
     username = update.message.chat.username
     logging.log(logging.INFO, f'start to query message {message_id} in chat:{chat_id} from {username}')
 
-    url = "'" + update.effective_message.text + "'"
-
-    temp_dir = f".temp{message_id}{chat_id}"
-    os.makedirs(temp_dir, exist_ok=True)
-    os.chdir(temp_dir)
+    url = "'" + url + "'"
 
     logging.log(logging.INFO, f'start downloading')
     context.bot.send_message(chat_id=chat_id, text="Fetching...")
@@ -64,13 +60,11 @@ def get_single_song(update, context):
         context.bot.send_message(chat_id=chat_id, text="Sending to you...")
         files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(".") for f in filenames if os.path.splitext(f)[1] == '.mp3']
         for file in files:
-            context.bot.send_audio(chat_id=chat_id, audio=open(file, 'rb'), timeout=18000)
+            with open(file, "rb") as audio_file:
+                context.bot.send_audio(chat_id=chat_id, audio=audio_file, timeout=18000)
             sent += 1
     except:
         pass
-
-    os.chdir('..')
-    subprocess.run(["rm", "-rf", temp_dir])
 
     if sent == 0:
         context.bot.send_message(chat_id=chat_id, text="It seems there was a problem in finding/sending the song.")
@@ -81,7 +75,10 @@ def get_single_song(update, context):
 def get_single_song_handler(update, context):
     if config["AUTH"]["ENABLE"]:
         authenticate(update, context)
-    get_single_song(update, context)
+    
+    urls = update.effective_message.text.split("\n")
+    for url in urls:
+        get_single_song(update, context, url)
 
 def main():
     try:
@@ -94,6 +91,7 @@ def main():
     updater = Updater(token, use_context=True)
     dispatcher = updater.dispatcher
 
+    global config
     config = load_config()
 
     handler = MessageHandler(Filters.text, get_single_song_handler)
