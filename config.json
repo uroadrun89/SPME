@@ -2,10 +2,10 @@
 with open('config.json') as f:
     config = json.load(f)
 
-SPOTIFY_CLIENT_ID = config['5844159a9506462fa5fd2d190238c37e']
-SPOTIFY_CLIENT_SECRET = config['c0e1785900eb4c0582b1f76b0398d9cf']
-TELEGRAM_BOT_TOKEN = config['6174716199:AAHUkPgOa04aew5-XFTZ9uqK4bfkZ8vC_tg']
+SPOTIFY_CLIENT_ID = config['spotify_client_id']
+SPOTIFY_CLIENT_SECRET = config['spotify_client_secret']
+TELEGRAM_BOT_TOKEN = config['telegram_bot_token']
 
 AUTHENTICATION_METHOD = config['authentication']['method']
-AUTHENTICATION_USERNAME = config['authentication']['mrkk68']
-AUTHENTICATION_PASSWORD = config['authentication']['c51A']
+AUTHENTICATION_USERNAME = config['authentication']['username']
+AUTHENTICATION_PASSWORD = config['authentication']['password']
