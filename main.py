@@ -1,8 +1,9 @@
 import logging
 import os
-import json
+import time
 from dotenv import dotenv_values
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,20 +29,20 @@ class Config:
 config = Config()
 
 def authenticate(func):
-    def wrapper(update, context):
+    def wrapper(update: Update, context: CallbackContext):
         chat_id = update.effective_chat.id
         if config.auth_enabled:
             if chat_id not in config.auth_users:
-                context.bot.send_message(chat_id=chat_id, text="⚠️ This bot is personal and you are not signed in. Please enter the password to sign in. If you don't know it, contact the bot owner.")
+                context.bot.send_message(chat_id=chat_id, text="⚠️ The password was incorrect")
                 return
         return func(update, context)
     return wrapper
 
-def start(update, context):
+def start(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
-    context.bot.send_message(chat_id=chat_id, text="Welcome to the Song Downloader Bot!")
+    context.bot.send_message(chat_id=chat_id, text="🎵 Welcome to the Song Downloader Bot! Amazing! 🎵")
 
-def get_single_song(update, context):
+def get_single_song(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
     message_id = update.effective_message.message_id
     username = update.effective_chat.username
@@ -54,24 +55,29 @@ def get_single_song(update, context):
     os.chdir(download_dir)
 
     logger.info('Downloading song...')
-    context.bot.send_message(chat_id=chat_id, text="Fetching...")
+    context.bot.send_message(chat_id=chat_id, text="🔍 Downloading")
 
     if url.startswith(("http://", "https://")):
         os.system(f'spotdl download "{url}" --threads 12 --format mp3 --bitrate 320k --lyrics genius')
 
-        logger.info('Sending song to user...')
+        logger.info('Sending song to user... Amazing!')
         sent = 0
         files = [file for file in os.listdir(".") if file.endswith(".mp3")]
         if files:
             for file in files:
-                context.bot.send_audio(chat_id=chat_id, audio=open(file, 'rb'), timeout=18000)
-                sent += 1
+                try:
+                    with open(file, 'rb') as audio_file:
+                        context.bot.send_audio(chat_id=chat_id, audio=audio_file, timeout=18000)
+                    sent += 1
+                    time.sleep(0.3)  # Add a delay of 0.3 second between sending each audio file
+                except Exception as e:
+                    logger.error(f"Error sending audio: {e}")
             logger.info(f'Sent {sent} audio file(s) to user.')
         else:
-            context.bot.send_message(chat_id=chat_id, text="Unable to find the requested song.")
+            context.bot.send_message(chat_id=chat_id, text="❌ Unable to find the requested song.")
             logger.warning('No audio file found after download.')
     else:
-        context.bot.send_message(chat_id=chat_id, text="Invalid URL. Please provide a valid song URL.")
+        context.bot.send_message(chat_id=chat_id, text="❌ Invalid URL. Please provide a valid song URL.")
         logger.warning('Invalid URL provided.')
 
     os.chdir('..')
@@ -89,8 +95,8 @@ def main():
     dispatcher.add_handler(song_handler)
 
     # Start the bot
-    updater.start_polling()
-    logger.info('Bot started.')
+    updater.start_polling(poll_interval=0.3)
+    logger.info('Bot started. Amazing!')
     updater.idle()
 
 if __name__ == "__main__":
