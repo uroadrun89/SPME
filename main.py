@@ -20,6 +20,11 @@ SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID') or config['spotify_client_id'
 SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET') or config['spotify_client_secret']
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN') or config['telegram_bot_token']
 
+# Authentication credentials from config.json
+AUTHENTICATION_METHOD = config['authentication']['method']
+AUTHENTICATION_USERNAME = config['authentication']['username']
+AUTHENTICATION_PASSWORD = config['authentication']['password']
+
 # Authenticate with Spotify
 scope = 'user-library-read'
 token = util.prompt_for_user_token(SPOTIFY_USERNAME, scope, client_id=SPOTIFY_CLIENT_ID,
@@ -44,9 +49,7 @@ def download_file(url, filename):
 
 
 def convert_to_mp3(input_file, output_file):
-    stream = ffmpeg.input(input_file)
-    stream = ffmpeg.output(stream, output_file, audio_bitrate='320k')
-    ffmpeg.run(stream, overwrite_output=True)
+    ffmpeg.input(input_file).output(output_file, audio_bitrate='320k', threads=12).run()
 
 
 def delete_temp_folder(folder_path):
@@ -89,7 +92,6 @@ def handle_message(message):
 
             download_thread.join()
 
-            bot.send_chat_action(chat_id, 'record_audio')
             mp3_filename = f'{temp_folder}/{track_name}.mp3'
             convert_to_mp3(f'{temp_folder}/{track_name}.ogg', mp3_filename)
 
