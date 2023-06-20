@@ -43,6 +43,10 @@ def get_single_song(update, context):
 
     url = "'" + update.effective_message.text + "'"
 
+    temp_dir = f".temp{message_id}{chat_id}"
+    os.makedirs(temp_dir, exist_ok=True)
+    os.chdir(temp_dir)
+
     logging.log(logging.INFO, f'start downloading')
     context.bot.send_message(chat_id=chat_id, text="Fetching...")
 
@@ -60,11 +64,13 @@ def get_single_song(update, context):
         context.bot.send_message(chat_id=chat_id, text="Sending to you...")
         files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(".") for f in filenames if os.path.splitext(f)[1] == '.mp3']
         for file in files:
-            with open(file, "rb") as audio_file:
-                context.bot.send_audio(chat_id=chat_id, audio=audio_file, timeout=18000)
+            context.bot.send_audio(chat_id=chat_id, audio=open(file, 'rb'), timeout=18000)
             sent += 1
     except:
         pass
+
+    os.chdir('..')
+    subprocess.run(["rm", "-rf", temp_dir])
 
     if sent == 0:
         context.bot.send_message(chat_id=chat_id, text="It seems there was a problem in finding/sending the song.")
@@ -75,11 +81,7 @@ def get_single_song(update, context):
 def get_single_song_handler(update, context):
     if config["AUTH"]["ENABLE"]:
         authenticate(update, context)
-    
-    urls = update.effective_message.text.split("\n")
-    for url in urls:
-        update.effective_message.text = url  # Update the message text with each URL
-        get_single_song(update, context)
+    get_single_song(update, context)
 
 def main():
     try:
