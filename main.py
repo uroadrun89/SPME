@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+os.system(f'spotdl --download-ffmpeg')
 from dotenv import dotenv_values
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
