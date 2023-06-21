@@ -21,8 +21,8 @@ RUN make -j 6
 RUN sudo make altinstall
 RUN python3.11 -m pip install --upgrade pip
 WORKDIR /root/SP
-RUN git clone https://github.com/freshremix/ispda.git
-WORKDIR /root/SP/ispda
+RUN git clone https://github.com/freshremix/SPMA.git
+WORKDIR /root/SP/SPMA
 RUN pip3.11 install -r requirements.txt
 RUN ls
 RUN BACKGROUND python3.11 main.py && \
